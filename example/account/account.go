@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/DavidBagaryan/portal/example/user"
+	"github.com/bagardavidyanisntreal/portal/example/user"
 )
 
 type Account struct {

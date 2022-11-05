@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/DavidBagaryan/portal"
-	"github.com/DavidBagaryan/portal/example/account"
-	"github.com/DavidBagaryan/portal/example/application"
-	"github.com/DavidBagaryan/portal/example/user"
+	"github.com/bagardavidyanisntreal/portal"
+	"github.com/bagardavidyanisntreal/portal/example/account"
+	"github.com/bagardavidyanisntreal/portal/example/application"
+	"github.com/bagardavidyanisntreal/portal/example/user"
 )
 
 const port = ":2022"

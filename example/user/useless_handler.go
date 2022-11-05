@@ -3,7 +3,7 @@ package user
 import (
 	"fmt"
 
-	"github.com/DavidBagaryan/portal"
+	"github.com/bagardavidyanisntreal/portal"
 )
 
 // todo remove this useless construction
