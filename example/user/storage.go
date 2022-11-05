@@ -1,9 +1,9 @@
 package user
 
 import (
+	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/DavidBagaryan/portal"
 )
@@ -18,11 +18,8 @@ type Storage struct {
 	gate portalGate
 }
 
-func NewStorage(gate portalGate) *Storage {
-	gate.Await(func(msg any) {
-		time.Sleep(time.Second * 2) // simulation handler long work todo remove
-		fmt.Printf("%s", msg)
-	})
+func NewStorage(ctx context.Context, gate portalGate) *Storage {
+	gate.Await(ctx, &uselessHandler{})
 	return &Storage{
 		gate: gate,
 		list: make(map[int64]*User),
@@ -30,15 +27,15 @@ func NewStorage(gate portalGate) *Storage {
 }
 
 func (s *Storage) Add(name string, age uint) (*User, error) {
-	u, err := New(name, age)
+	user, err := New(name, age)
 	if err != nil {
 		return nil, err
 	}
-	s.gate.Send(*u)
+	s.gate.Send(user.CreatedMessage())
 	s.lock.Lock()
-	s.list[u.id] = u
+	s.list[user.id] = user
 	s.lock.Unlock()
-	return u, nil
+	return user, nil
 }
 
 func (s *Storage) Get(userID int64) (*User, error) {

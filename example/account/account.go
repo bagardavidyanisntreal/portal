@@ -64,6 +64,12 @@ func (a Account) IsSenior() bool {
 	return !(a.privileges > Senior)
 }
 
+func (a Account) CreatedNotify() *CreatedNotify {
+	return &CreatedNotify{
+		account: a,
+	}
+}
+
 type AccOpt func(acc *Account) (*Account, error)
 
 func WithBalance(balance int64) AccOpt {

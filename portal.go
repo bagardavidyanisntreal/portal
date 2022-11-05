@@ -1,14 +1,28 @@
 package portal
 
 import (
+	"context"
+	"fmt"
 	"sync"
 )
 
 // Gate implementation to embed in case of distributed interfaces
 // or just to import locally
 type Gate interface {
-	Send(msg any)
-	Await(handler func(msg any))
+	Send(msg Message)
+	Await(ctx context.Context, handlers ...Handler)
+}
+
+// Handler func signature to pass through Gate.Await
+type Handler interface {
+	Support(msg Message) bool
+	Handle(msg Message)
+}
+
+// Message data to pass through Gate
+// todo generics ??
+type Message interface {
+	Data() any
 }
 
 // Portal helps to connect services without coupling
@@ -17,26 +31,35 @@ type Gate interface {
 type Portal struct {
 	wg    sync.WaitGroup
 	lock  sync.RWMutex
-	subs  []chan any
-	input chan any
+	subs  []chan Message
+	input chan Message
 }
 
 // New Portal constructor
 // also runs monitor func under the hood
-func New() *Portal {
+func New(ctx context.Context) *Portal {
 	return (&Portal{
-		input: make(chan any),
-	}).monitor()
+		input: make(chan Message),
+	}).monitor(ctx)
 }
 
-func (b *Portal) monitor() *Portal {
+func (b *Portal) monitor(ctx context.Context) *Portal {
 	go func() {
 		for {
 			select {
-			case inp := <-b.input:
-				for _, sub := range b.subscriptions() {
-					b.wg.Add(1)
-					sub <- inp
+			case <-ctx.Done():
+				fmt.Println(ctx.Err()) // todo return errs somehow
+				return
+			default:
+				select {
+				case <-ctx.Done():
+					fmt.Println(ctx.Err())
+					return
+				case inp := <-b.input:
+					for _, sub := range b.subscriptions() {
+						b.wg.Add(1)
+						sub <- inp
+					}
 				}
 			}
 		}
@@ -44,8 +67,8 @@ func (b *Portal) monitor() *Portal {
 	return b
 }
 
-func (b *Portal) subscriptions() []chan any {
-	subs := make([]chan any, len(b.subs))
+func (b *Portal) subscriptions() []chan Message {
+	subs := make([]chan Message, len(b.subs))
 	b.lock.RLock()
 	copy(subs, b.subs)
 	b.lock.RUnlock()
@@ -54,7 +77,7 @@ func (b *Portal) subscriptions() []chan any {
 
 // Send sends message on input channel, which fans-out it on subscriptions after
 // each subscription handler decides for itself whether to process the received message or not
-func (b *Portal) Send(msg any) {
+func (b *Portal) Send(msg Message) {
 	go func() {
 		b.input <- msg
 	}()
@@ -62,24 +85,37 @@ func (b *Portal) Send(msg any) {
 
 // Await subscribes specific handler on notification from portal input
 // process runs on listener goroutine
-func (b *Portal) Await(handler func(msg any)) {
-	subscription := make(chan any)
+func (b *Portal) Await(ctx context.Context, handlers ...Handler) {
+	subscription := make(chan Message)
 	b.lock.Lock()
 	b.subs = append(b.subs, subscription)
 	b.lock.Unlock()
-	b.listen(subscription, handler)
+	for _, handler := range handlers {
+		b.listen(ctx, subscription, handler)
+	}
 }
 
-func (b *Portal) listen(sub <-chan any, handler func(msg any)) {
+func (b *Portal) listen(ctx context.Context, subscription <-chan Message, handler Handler) {
 	go func() {
 		for {
 			select {
-			case msg, open := <-sub:
-				if !open {
+			case <-ctx.Done():
+				fmt.Println(ctx.Err()) // todo return errs somehow
+				return
+			default:
+				select {
+				case <-ctx.Done():
+					fmt.Println(ctx.Err())
 					return
+				case msg, open := <-subscription:
+					if !open {
+						return
+					}
+					if handler.Support(msg) {
+						handler.Handle(msg)
+					}
+					b.wg.Done()
 				}
-				handler(msg)
-				b.wg.Done()
 			}
 		}
 	}()

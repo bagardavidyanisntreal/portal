@@ -38,3 +38,9 @@ func (u User) String() string {
 		u.age,
 	)
 }
+
+func (u User) CreatedMessage() *CreatedMessage {
+	return &CreatedMessage{
+		user: u,
+	}
+}
