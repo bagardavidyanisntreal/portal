@@ -2,7 +2,7 @@ package portal
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"sync"
 )
 
@@ -20,7 +20,9 @@ type Handler interface {
 }
 
 // Message data to pass through Gate
-// todo generics ??
+// todo add generics ?? no way cause generics are 💩
+// may be in different package to choose between simple type assertion/listen all the messages
+// or get typed data output for performance
 type Message interface {
 	Data() any
 }
@@ -35,6 +37,8 @@ type Portal struct {
 	input chan Message
 }
 
+const logfmt = "[PORTAL]: %s"
+
 // New Portal constructor
 // also runs monitor func under the hood
 func New(ctx context.Context) *Portal {
@@ -48,12 +52,12 @@ func (b *Portal) monitor(ctx context.Context) *Portal {
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println(ctx.Err()) // todo return errs somehow
+				log.Printf(logfmt, ctx.Err())
 				return
 			default:
 				select {
 				case <-ctx.Done():
-					fmt.Println(ctx.Err())
+					log.Printf(logfmt, ctx.Err())
 					return
 				case inp := <-b.input:
 					for _, sub := range b.subscriptions() {
@@ -100,12 +104,12 @@ func (b *Portal) listen(ctx context.Context, subscription <-chan Message, handle
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println(ctx.Err()) // todo return errs somehow
+				log.Printf(logfmt, ctx.Err())
 				return
 			default:
 				select {
 				case <-ctx.Done():
-					fmt.Println(ctx.Err())
+					log.Printf(logfmt, ctx.Err())
 					return
 				case msg, open := <-subscription:
 					if !open {

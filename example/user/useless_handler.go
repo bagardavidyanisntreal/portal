@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bagardavidyanisntreal/portal"
 )
@@ -14,6 +15,6 @@ func (u uselessHandler) Support(_ portal.Message) bool {
 }
 
 func (u uselessHandler) Handle(msg portal.Message) {
-	//time.Sleep(time.Second * 2) // simulation handler long work
+	time.Sleep(time.Second * 2) // simulation handler long work
 	fmt.Printf("%s\n", msg.Data())
 }
