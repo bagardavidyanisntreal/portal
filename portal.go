@@ -47,7 +47,7 @@ func New(ctx context.Context) *Portal {
 	}).monitor(ctx)
 }
 
-func (b *Portal) monitor(ctx context.Context) *Portal {
+func (p *Portal) monitor(ctx context.Context) *Portal {
 	go func() {
 		for {
 			select {
@@ -59,47 +59,47 @@ func (b *Portal) monitor(ctx context.Context) *Portal {
 				case <-ctx.Done():
 					log.Printf(logfmt, ctx.Err())
 					return
-				case inp := <-b.input:
-					for _, sub := range b.subscriptions() {
-						b.wg.Add(1)
+				case inp := <-p.input:
+					for _, sub := range p.subscriptions() {
+						p.wg.Add(1)
 						sub <- inp
 					}
 				}
 			}
 		}
 	}()
-	return b
+	return p
 }
 
-func (b *Portal) subscriptions() []chan Message {
-	subs := make([]chan Message, len(b.subs))
-	b.lock.RLock()
-	copy(subs, b.subs)
-	b.lock.RUnlock()
+func (p *Portal) subscriptions() []chan Message {
+	subs := make([]chan Message, len(p.subs))
+	p.lock.RLock()
+	copy(subs, p.subs)
+	p.lock.RUnlock()
 	return subs
 }
 
 // Send sends message on input channel, which fans-out it on subscriptions after
 // each subscription handler decides for itself whether to process the received message or not
-func (b *Portal) Send(msg Message) {
+func (p *Portal) Send(msg Message) {
 	go func() {
-		b.input <- msg
+		p.input <- msg
 	}()
 }
 
 // Await subscribes specific handler on notification from portal input
 // process runs on listener goroutine
-func (b *Portal) Await(ctx context.Context, handlers ...Handler) {
+func (p *Portal) Await(ctx context.Context, handlers ...Handler) {
 	subscription := make(chan Message)
-	b.lock.Lock()
-	b.subs = append(b.subs, subscription)
-	b.lock.Unlock()
+	p.lock.Lock()
+	p.subs = append(p.subs, subscription)
+	p.lock.Unlock()
 	for _, handler := range handlers {
-		b.listen(ctx, subscription, handler)
+		p.listen(ctx, subscription, handler)
 	}
 }
 
-func (b *Portal) listen(ctx context.Context, subscription <-chan Message, handler Handler) {
+func (p *Portal) listen(ctx context.Context, subscription <-chan Message, handler Handler) {
 	go func() {
 		for {
 			select {
@@ -118,7 +118,7 @@ func (b *Portal) listen(ctx context.Context, subscription <-chan Message, handle
 					if handler.Support(msg) {
 						handler.Handle(msg)
 					}
-					b.wg.Done()
+					p.wg.Done()
 				}
 			}
 		}
@@ -126,12 +126,12 @@ func (b *Portal) listen(ctx context.Context, subscription <-chan Message, handle
 }
 
 // Close ends Portal working closing input channel and all the subscriptions
-func (b *Portal) Close() {
-	b.wg.Wait()
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	close(b.input)
-	for _, sub := range b.subs {
+func (p *Portal) Close() {
+	p.wg.Wait()
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	close(p.input)
+	for _, sub := range p.subs {
 		close(sub)
 	}
 }
