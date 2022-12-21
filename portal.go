@@ -127,11 +127,14 @@ func (p *Portal) listen(ctx context.Context, subscription <-chan Message, handle
 
 // Close ends Portal working closing input channel and all the subscriptions
 func (p *Portal) Close() {
+	log.Printf(logfmt, "stopping...")
 	p.wg.Wait()
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	close(p.input)
+	log.Printf(logfmt, "closing subscriber channels...")
 	for _, sub := range p.subs {
 		close(sub)
 	}
+	log.Printf(logfmt, "stopped OK")
 }
