@@ -48,8 +48,9 @@ func (t testMsg) Data() any {
 	return string(t)
 }
 
-func TestPortal_SendAndClose(t *testing.T) {
+func TestPortal_SendAndCloseSimultaneously(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
 	portal := New(ctx)
 
@@ -57,16 +58,27 @@ func TestPortal_SendAndClose(t *testing.T) {
 	handler := &testHandler{storage: storage}
 	portal.Await(ctx, handler)
 
-	for i := 0; i < 555; i++ {
+	var wg sync.WaitGroup
+	var mx sync.Mutex
+	wg.Add(1)
+	go func() {
+		mx.Lock()
+		defer mx.Unlock()
+		defer wg.Done()
+		portal.Close()
+	}()
+
+	for i := 0; i < 10; i++ {
 		msg := fmt.Sprintf("msg %d", i)
 		portal.Send(testMsg(msg))
 	}
-	go portal.Close()
 	portal.Send(testMsg("msg 666"))
+
+	wg.Wait()
 
 	for _, msg := range storage.Data() {
 		if msg == "msg 666" {
-			t.Error("this shouldn't have happened")
+			t.Log("you are so lucky to see this here")
 		}
 	}
 }
