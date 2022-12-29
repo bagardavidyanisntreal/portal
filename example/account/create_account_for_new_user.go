@@ -3,8 +3,8 @@ package account
 import (
 	"fmt"
 
-	"github.com/bagardavidyanisntreal/portal"
 	"github.com/bagardavidyanisntreal/portal/example/user"
+	"github.com/bagardavidyanisntreal/portal/portal"
 )
 
 type createAccountForNewUser struct {

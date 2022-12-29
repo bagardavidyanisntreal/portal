@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bagardavidyanisntreal/portal"
+	"github.com/bagardavidyanisntreal/portal/portal"
 )
 
 // todo remove this useless construction
