@@ -12,14 +12,16 @@ func (p *Portal) Await(ctx context.Context, handlers ...Handler) {
 		return
 	}
 
-	subscription := newInput()
-	p.lock.Lock()
-	p.subs = append(p.subs, subscription)
-	p.lock.Unlock()
-
+	var newSubs []*input
 	for _, handler := range handlers {
-		p.listen(ctx, subscription, handler)
+		newSub := newInput()
+		newSubs = append(newSubs, newSub)
+		p.listen(ctx, newSub, handler)
 	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.subs = append(p.subs, newSubs...)
 }
 
 func (p *Portal) listen(ctx context.Context, subscription *input, handler Handler) {
