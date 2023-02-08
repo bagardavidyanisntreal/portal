@@ -38,8 +38,8 @@ func (p *Portal) inputMonitor(ctx context.Context) {
 
 func (p *Portal) subscriptions() []*input {
 	subs := make([]*input, len(p.subs))
-	p.lock.RLock()
+	p.mu.RLock()
 	copy(subs, p.subs)
-	p.lock.RUnlock()
+	p.mu.RUnlock()
 	return subs
 }

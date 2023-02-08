@@ -30,8 +30,9 @@ type Message interface {
 // to pass a message use Send
 // to receive a message use Await with specific handler func on it
 type Portal struct {
-	wg    sync.WaitGroup
-	lock  sync.RWMutex
+	wg *sync.WaitGroup
+	mu sync.RWMutex
+
 	subs  []*input
 	input *input
 }
@@ -40,6 +41,7 @@ type Portal struct {
 // also runs inputMonitor func under the hood
 func New(ctx context.Context) *Portal {
 	p := &Portal{
+		wg:    new(sync.WaitGroup),
 		input: newInput(),
 	}
 	p.inputMonitor(ctx)

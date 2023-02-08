@@ -12,8 +12,8 @@ func (p *Portal) Close() {
 	p.input.close()
 
 	log.Printf(logfmt, "closing subscriber channels...")
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	for _, sub := range p.subs {
 		sub.close()
 	}

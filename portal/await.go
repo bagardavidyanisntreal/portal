@@ -19,8 +19,8 @@ func (p *Portal) Await(ctx context.Context, handlers ...Handler) {
 		p.listen(ctx, newSub, handler)
 	}
 
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.subs = append(p.subs, newSubs...)
 }
 
@@ -38,13 +38,10 @@ func (p *Portal) listen(ctx context.Context, subscription *input, handler Handle
 					log.Printf(logfmt, ctx.Err())
 					return
 				case msg, open := <-subscription.hub:
-					if !open {
-						return
-					}
-					if handler.Support(msg) {
+					if open && handler.Support(msg) {
 						handler.Handle(msg)
-						p.wg.Done()
 					}
+					p.wg.Done()
 				}
 			}
 		}

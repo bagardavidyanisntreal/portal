@@ -3,8 +3,10 @@ package portal
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
 	"testing"
+	"time"
 )
 
 type testStorage struct {
@@ -40,6 +42,7 @@ func (t *testHandler) Handle(msg Message) {
 		return
 	}
 	t.storage.Add(str)
+	time.Sleep(200 * time.Millisecond)
 }
 
 type testMsg string
@@ -50,6 +53,8 @@ func (t testMsg) Data() any {
 
 func TestPortal_SendAndCloseSimultaneously(t *testing.T) {
 	t.Parallel()
+
+	count := 25
 
 	ctx := context.Background()
 	portal := New(ctx)
@@ -68,17 +73,28 @@ func TestPortal_SendAndCloseSimultaneously(t *testing.T) {
 		portal.Close()
 	}()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < count; i++ {
 		msg := fmt.Sprintf("msg %d", i)
 		portal.Send(testMsg(msg))
 	}
-	portal.Send(testMsg("msg 666"))
 
 	wg.Wait()
 
+	rand.Seed(time.Now().UnixNano())
+	randId := rand.Intn(count)
+
+	wantMsg := fmt.Sprintf("msg %d", randId)
+
+	var fails int
 	for _, msg := range storage.Data() {
-		if msg == "msg 666" {
-			t.Log("you are so lucky to see this here")
+		if msg != wantMsg {
+			fails++
+			continue
 		}
+		t.Logf("you are so lucky, wantMsg '%s' found!", wantMsg)
+	}
+
+	if fails == count {
+		t.Errorf("got fails eq to count, wantMsg '%s' not found", wantMsg)
 	}
 }
