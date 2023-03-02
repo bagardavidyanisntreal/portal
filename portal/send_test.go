@@ -1,7 +1,6 @@
 package portal
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -31,13 +30,8 @@ type testHandler struct {
 	storage *testStorage
 }
 
-func (t *testHandler) Support(_ Message) bool {
-	return true
-}
-
-func (t *testHandler) Handle(msg Message) {
-	data := msg.Data()
-	str, ok := data.(string)
+func (t *testHandler) Handle(msg any) {
+	str, ok := msg.(string)
 	if !ok {
 		return
 	}
@@ -45,37 +39,27 @@ func (t *testHandler) Handle(msg Message) {
 	time.Sleep(200 * time.Millisecond)
 }
 
-type testMsg string
-
-func (t testMsg) Data() any {
-	return string(t)
-}
-
 func TestPortal_SendAndCloseSimultaneously(t *testing.T) {
 	t.Parallel()
 
 	count := 25
 
-	ctx := context.Background()
-	portal := New(ctx)
+	portal := New()
 
 	storage := &testStorage{}
 	handler := &testHandler{storage: storage}
-	portal.Await(ctx, handler)
+	portal.Subscribe(handler)
 
 	var wg sync.WaitGroup
-	var mx sync.Mutex
 	wg.Add(1)
 	go func() {
-		mx.Lock()
-		defer mx.Unlock()
 		defer wg.Done()
 		portal.Close()
 	}()
 
 	for i := 0; i < count; i++ {
 		msg := fmt.Sprintf("msg %d", i)
-		portal.Send(testMsg(msg))
+		portal.Send(msg)
 	}
 
 	wg.Wait()

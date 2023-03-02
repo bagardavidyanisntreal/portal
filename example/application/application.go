@@ -11,7 +11,7 @@ type (
 		Get(userID int64) (*user.User, error)
 	}
 	accounts interface {
-		Add(user user.User, balance int64) (*account.Account, error)
+		Add(user *user.User, balance int64) (*account.Account, error)
 	}
 )
 

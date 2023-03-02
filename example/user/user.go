@@ -1,15 +1,15 @@
 package user
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 )
 
 type User struct {
-	id   int64
-	name string
-	age  uint
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Age  uint   `json:"age"`
 }
 
 func New(name string, age uint) (*User, error) {
@@ -20,27 +20,13 @@ func New(name string, age uint) (*User, error) {
 		return nil, errors.New("username cannot be less then 2 or more then 250 symbols length")
 	}
 	return &User{
-		id:   time.Now().Unix(),
-		name: name,
-		age:  age,
+		ID:   time.Now().Unix(),
+		Name: name,
+		Age:  age,
 	}, nil
 }
 
-func (u User) GetID() int64 {
-	return u.id
-}
-
 func (u User) String() string {
-	return fmt.Sprintf(
-		`{"id": %d, name": "%s", "age": %d}`,
-		u.id,
-		u.name,
-		u.age,
-	)
-}
-
-func (u User) CreatedMessage() *CreatedMessage {
-	return &CreatedMessage{
-		user: u,
-	}
+	b, _ := json.Marshal(u)
+	return string(b)
 }

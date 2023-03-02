@@ -1,4 +1,4 @@
 # portal
 
-message-bus (event-bus) implementation driven channels<br/>
-check example dir to see implementation
+Publisher-Subscriber pattern implementation based on channels
+aka Choreography pattern

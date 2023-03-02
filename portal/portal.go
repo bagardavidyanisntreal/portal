@@ -1,49 +1,54 @@
 package portal
 
-import (
-	"context"
-	"sync"
-)
-
 // Gate implementation to embed in case of distributed interfaces
 // or just to import locally
 type Gate interface {
-	Send(msg Message)
-	Await(ctx context.Context, handlers ...Handler)
+	Send(msg any)
+	Subscribe(handlers ...Handler)
 }
 
 // Handler func signature to pass through Gate.Await
 type Handler interface {
-	Support(msg Message) bool
-	Handle(msg Message)
-}
-
-// Message data to pass through Gate
-// todo add generics ?? no way cause generics are 💩
-// may be in different package to choose between simple type assertion/listen all the messages
-// or get typed data output for performance
-type Message interface {
-	Data() any
+	Handle(msg any)
 }
 
 // Portal helps to connect services without coupling
 // to pass a message use Send
-// to receive a message use Await with specific handler func on it
+// to receive a message use Subscribe with specific handler func on it
 type Portal struct {
-	wg *sync.WaitGroup
-	mu sync.RWMutex
-
-	subs  []*input
-	input *input
+	done  chan struct{}
+	input chan any
+	subs  []chan any
 }
 
 // New Portal constructor
-// also runs inputMonitor func under the hood
-func New(ctx context.Context) *Portal {
+// also runs monitor for input
+func New() *Portal {
 	p := &Portal{
-		wg:    new(sync.WaitGroup),
-		input: newInput(),
+		done:  make(chan struct{}),
+		input: make(chan any),
 	}
-	p.inputMonitor(ctx)
+
+	go p.monitor()
 	return p
+}
+
+func (p *Portal) monitor() {
+	for {
+		select {
+		case <-p.done:
+			close(p.input)
+			for _, sub := range p.subs {
+				close(sub)
+			}
+			return
+		case msg, open := <-p.input:
+			if !open {
+				return
+			}
+			for _, sub := range p.subs {
+				send(msg, sub, p.done)
+			}
+		}
+	}
 }

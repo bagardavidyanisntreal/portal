@@ -1,7 +1,6 @@
 package portal
 
 import (
-	"context"
 	"fmt"
 	"testing"
 )
@@ -10,12 +9,8 @@ type awaitTestHandler1 struct {
 	storage *testStorage
 }
 
-func (t awaitTestHandler1) Support(_ Message) bool {
-	return true
-}
-
-func (t awaitTestHandler1) Handle(msg Message) {
-	data := fmt.Sprintf("[awaitTestHandler1]: '%v'", msg.Data())
+func (t awaitTestHandler1) Handle(msg any) {
+	data := fmt.Sprintf("[awaitTestHandler1]: '%v'", msg)
 	t.storage.Add(data)
 }
 
@@ -23,33 +18,22 @@ type awaitTestHandler2 struct {
 	storage *testStorage
 }
 
-func (t awaitTestHandler2) Support(_ Message) bool {
-	return true
-}
-
-func (t awaitTestHandler2) Handle(msg Message) {
-	data := fmt.Sprintf("[awaitTestHandler2]: '%v'", msg.Data())
+func (t awaitTestHandler2) Handle(msg any) {
+	data := fmt.Sprintf("[awaitTestHandler2]: '%v'", msg)
 	t.storage.Add(data)
-}
-
-type awaitTestMessage struct{}
-
-func (a awaitTestMessage) Data() any {
-	return "I am await function test data"
 }
 
 func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	portal := New(ctx)
+	portal := New()
 
 	storage := &testStorage{}
 
-	portal.Await(ctx,
+	portal.Subscribe(
 		&awaitTestHandler1{storage: storage},
 		&awaitTestHandler2{storage: storage},
 	)
-	portal.Send(awaitTestMessage{})
+	portal.Send("I am await function test data")
 
 	portal.Close()
 

@@ -3,18 +3,12 @@ package user
 import (
 	"fmt"
 	"time"
-
-	"github.com/bagardavidyanisntreal/portal/portal"
 )
 
 // todo remove this useless construction
 type uselessHandler struct{}
 
-func (u uselessHandler) Support(_ portal.Message) bool {
-	return true
-}
-
-func (u uselessHandler) Handle(msg portal.Message) {
+func (u uselessHandler) Handle(msg any) {
 	time.Sleep(time.Second * 2) // simulation handler long work
-	fmt.Printf("%s\n", msg.Data())
+	fmt.Printf("%T: %v\n", msg, msg)
 }

@@ -1,7 +1,6 @@
 package account
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
@@ -15,28 +14,28 @@ type Storage struct {
 	gate portal.Gate
 }
 
-func NewStorage(ctx context.Context, gate portal.Gate) *Storage {
+func NewStorage(gate portal.Gate) *Storage {
 	srg := &Storage{
 		gate: gate,
 		list: make(map[int64]*Account),
 	}
-	gate.Await(ctx, &createAccountForNewUser{storage: srg})
+	gate.Subscribe(&createAccountForNewUser{storage: srg})
 	return srg
 }
 
-func (s *Storage) Add(user user.User, balance int64) (*Account, error) {
-	existed, _ := s.Get(user.GetID())
+func (s *Storage) Add(user *user.User, balance int64) (*Account, error) {
+	existed, _ := s.Get(user.ID)
 	if existed != nil {
-		return nil, fmt.Errorf("account already exists, %s", user)
+		return nil, fmt.Errorf("account already exists, %v\n", user)
 	}
-	account, err := New(&user, WithBalance(balance), WithPrivileges(Privileges(1)))
+	account, err := New(user, WithBalance(balance), WithPrivileges(Privileges(1)))
 	if err != nil {
 		return nil, err
 	}
 	s.lock.Lock()
-	s.list[user.GetID()] = account
+	s.list[user.ID] = account
 	s.lock.Unlock()
-	s.gate.Send(account.CreatedNotify())
+	s.gate.Send(account)
 	return account, nil
 }
 

@@ -6,8 +6,8 @@ import (
 )
 
 type AddAccRequest struct {
-	UserID  int64
-	Balance int64
+	UserID  int64 `json:"user_id"`
+	Balance int64 `json:"balance"`
 }
 
 func (a Application) AddAccount(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +23,7 @@ func (a Application) AddAccount(w http.ResponseWriter, r *http.Request) {
 		response500(w, err)
 		return
 	}
-	acc, err := a.accounts.Add(*u, req.Balance)
+	acc, err := a.accounts.Add(u, req.Balance)
 	if err != nil {
 		response500(w, err)
 		return

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 
@@ -14,11 +13,11 @@ import (
 const port = ":2022"
 
 func main() {
-	ctx := context.Background()
-	portalGate := portal.New(ctx)
+	portalGate := portal.New()
 	defer portalGate.Close()
-	users := user.NewStorage(ctx, portalGate)
-	accounts := account.NewStorage(ctx, portalGate)
+
+	users := user.NewStorage(portalGate)
+	accounts := account.NewStorage(portalGate)
 	app := application.New(users, accounts)
 
 	http.HandleFunc("/add/user", app.AddUser)

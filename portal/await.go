@@ -1,49 +1,33 @@
 package portal
 
-import (
-	"context"
-	"log"
-)
-
-// Await subscribes specific handler on notification from portal input
+// Subscribe subscribes specific handler on notification from portal input
 // process runs on listener goroutine
-func (p *Portal) Await(ctx context.Context, handlers ...Handler) {
+func (p *Portal) Subscribe(handlers ...Handler) {
 	if len(handlers) == 0 {
 		return
 	}
 
-	var newSubs []*input
-	for _, handler := range handlers {
-		newSub := newInput()
-		newSubs = append(newSubs, newSub)
-		p.listen(ctx, newSub, handler)
+	subscribers := make([]chan any, len(handlers))
+	for i, handler := range handlers {
+		subscriber := make(chan any)
+		subscribers[i] = subscriber
+
+		go p.listen(subscriber, handler)
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.subs = append(p.subs, newSubs...)
+	p.subs = append(p.subs, subscribers...)
 }
 
-func (p *Portal) listen(ctx context.Context, subscription *input, handler Handler) {
-	const logfmt = "[portal await listener]: %s"
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Printf(logfmt, ctx.Err())
+func (p *Portal) listen(subscription chan any, handler Handler) {
+	for {
+		select {
+		case <-p.done:
+			return
+		case msg, open := <-subscription:
+			if !open {
 				return
-			default:
-				select {
-				case <-ctx.Done():
-					log.Printf(logfmt, ctx.Err())
-					return
-				case msg, open := <-subscription.hub:
-					if open && handler.Support(msg) {
-						handler.Handle(msg)
-					}
-					p.wg.Done()
-				}
 			}
+			handler.Handle(msg)
 		}
-	}()
+	}
 }

@@ -1,16 +1,16 @@
 package account
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/bagardavidyanisntreal/portal/example/user"
 )
 
 type Account struct {
-	balance    int64
-	privileges Privileges
-	user       *user.User
+	Balance    int64      `json:"balance"`
+	Privileges Privileges `json:"privileges"`
+	User       *user.User `json:"user"`
 }
 
 func New(user *user.User, opts ...AccOpt) (*Account, error) {
@@ -18,7 +18,7 @@ func New(user *user.User, opts ...AccOpt) (*Account, error) {
 		return nil, errors.New("cannot creat acc from undefined user")
 	}
 	acc := &Account{
-		user: user,
+		User: user,
 	}
 	var err error
 	for _, opt := range opts {
@@ -28,15 +28,6 @@ func New(user *user.User, opts ...AccOpt) (*Account, error) {
 		}
 	}
 	return acc, nil
-}
-
-func (a Account) String() string {
-	return fmt.Sprintf(
-		`{"user": %s, "balance": %d, "priveleges": %d}`,
-		a.user,
-		a.balance,
-		a.privileges,
-	)
 }
 
 type Privileges int
@@ -49,25 +40,24 @@ const (
 )
 
 func (a Account) IsIntern() bool {
-	return !(a.privileges > Intern)
+	return !(a.Privileges > Intern)
 }
 
 func (a Account) IsJunior() bool {
-	return !(a.privileges > Junior)
+	return !(a.Privileges > Junior)
 }
 
 func (a Account) IsMiddle() bool {
-	return !(a.privileges > Middle)
+	return !(a.Privileges > Middle)
 }
 
 func (a Account) IsSenior() bool {
-	return !(a.privileges > Senior)
+	return !(a.Privileges > Senior)
 }
 
-func (a Account) CreatedNotify() *CreatedNotify {
-	return &CreatedNotify{
-		account: a,
-	}
+func (a Account) String() string {
+	b, _ := json.Marshal(a)
+	return string(b)
 }
 
 type AccOpt func(acc *Account) (*Account, error)
@@ -86,14 +76,14 @@ func WithBalance(balance int64) AccOpt {
 		if acc.IsSenior() && balance > 700 {
 			return nil, errors.New("senior cannot get more then 700")
 		}
-		acc.balance = balance
+		acc.Balance = balance
 		return acc, nil
 	}
 }
 
 func WithPrivileges(privileges Privileges) AccOpt {
 	return func(acc *Account) (*Account, error) {
-		acc.privileges = privileges
+		acc.Privileges = privileges
 		return acc, nil
 	}
 }
