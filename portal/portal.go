@@ -1,5 +1,7 @@
 package portal
 
+import "log"
+
 // Gate implementation to embed in case of distributed interfaces
 // or just to import locally
 type Gate interface {
@@ -51,4 +53,10 @@ func (p *Portal) monitor() {
 			}
 		}
 	}
+}
+
+// Close signals about Portal working ending
+func (p *Portal) Close() {
+	log.Println("stopping portal...")
+	p.done <- struct{}{}
 }
