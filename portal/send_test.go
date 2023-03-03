@@ -16,8 +16,11 @@ type testStorage struct {
 func (s *testStorage) Add(str string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
 	fmt.Println("[test storage receiver]: stored data", str)
 	s.data = append(s.data, str)
+
+	time.Sleep(10 * time.Millisecond) // simulation
 }
 
 func (s *testStorage) Data() []string {
@@ -36,33 +39,24 @@ func (t *testHandler) Handle(msg any) {
 		return
 	}
 	t.storage.Add(str)
-	time.Sleep(200 * time.Millisecond)
 }
 
 func TestPortal_SendAndCloseSimultaneously(t *testing.T) {
 	t.Parallel()
 
-	count := 25
-
 	portal := New()
-
 	storage := &testStorage{}
 	handler := &testHandler{storage: storage}
 	portal.Subscribe(handler)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		portal.Close()
-	}()
-
+	count := 25
 	for i := 0; i < count; i++ {
+		if i == 1 {
+			go func() { portal.Close() }()
+		}
 		msg := fmt.Sprintf("msg %d", i)
 		portal.Send(msg)
 	}
-
-	wg.Wait()
 
 	rand.Seed(time.Now().UnixNano())
 	randId := rand.Intn(count)

@@ -15,8 +15,10 @@ func (p *Portal) Subscribe(handlers ...Handler) {
 		go p.listen(subscriber, handler)
 	}
 
-	p.subsLock.Lock()
-	defer p.subsLock.Unlock()
+	p.subsCount.Add(uint32(len(subscribers)))
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	p.subs = append(p.subs, subscribers...)
 }
 
@@ -36,6 +38,7 @@ func (p *Portal) listen(subscription chan any, handler Handler) {
 				return
 			}
 			handler.Handle(msg)
+			p.wg.Done()
 		}
 	}
 }

@@ -5,21 +5,21 @@ import (
 	"testing"
 )
 
-type awaitTestHandler1 struct {
+type subscribeTestHandler1 struct {
 	storage *testStorage
 }
 
-func (t awaitTestHandler1) Handle(msg any) {
-	data := fmt.Sprintf("[awaitTestHandler1]: '%v'", msg)
+func (t subscribeTestHandler1) Handle(msg any) {
+	data := fmt.Sprintf("[subscribeTestHandler1]: '%v'", msg)
 	t.storage.Add(data)
 }
 
-type awaitTestHandler2 struct {
+type subscribeTestHandler2 struct {
 	storage *testStorage
 }
 
-func (t awaitTestHandler2) Handle(msg any) {
-	data := fmt.Sprintf("[awaitTestHandler2]: '%v'", msg)
+func (t subscribeTestHandler2) Handle(msg any) {
+	data := fmt.Sprintf("[subscribeTestHandler2]: '%v'", msg)
 	t.storage.Add(data)
 }
 
@@ -30,16 +30,22 @@ func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
 	storage := &testStorage{}
 
 	portal.Subscribe(
-		&awaitTestHandler1{storage: storage},
-		&awaitTestHandler2{storage: storage},
+		&subscribeTestHandler1{storage: storage},
+		&subscribeTestHandler2{storage: storage},
 	)
-	portal.Send("I am await function test data")
+	portal.Send("I am test data")
+	portal.Send("Some new data!")
+	portal.Send("And more...")
 
 	portal.Close()
 
 	wantData := map[string]struct{}{
-		"[awaitTestHandler1]: 'I am await function test data'": {},
-		"[awaitTestHandler2]: 'I am await function test data'": {},
+		"[subscribeTestHandler1]: 'I am test data'": {},
+		"[subscribeTestHandler2]: 'I am test data'": {},
+		"[subscribeTestHandler1]: 'Some new data!'": {},
+		"[subscribeTestHandler2]: 'Some new data!'": {},
+		"[subscribeTestHandler1]: 'And more...'":    {},
+		"[subscribeTestHandler2]: 'And more...'":    {},
 	}
 
 	gotData := storage.Data()

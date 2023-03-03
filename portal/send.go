@@ -15,6 +15,7 @@ func (p *Portal) Send(msg any) {
 		p.closeInput()
 		return
 	case p.input <- msg:
+		p.wg.Add(int(p.subsCount.Load()))
 	}
 }
 

@@ -21,8 +21,8 @@ func (p *Portal) monitor() {
 }
 
 func (p *Portal) notify(msg any) {
-	p.subsLock.Lock()
-	defer p.subsLock.Unlock()
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	for _, sub := range p.subs {
 		select {
 		case <-p.done:
@@ -42,8 +42,8 @@ func (p *Portal) notify(msg any) {
 
 func (p *Portal) closeSubs() {
 	p.subsOnce.Do(func() {
-		p.subsLock.Lock()
-		defer p.subsLock.Unlock()
+		p.lock.Lock()
+		defer p.lock.Unlock()
 		for _, sub := range p.subs {
 			close(sub)
 		}

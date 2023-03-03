@@ -3,6 +3,7 @@ package portal
 import (
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 // Gate implementation to embed in case of distributed interfaces
@@ -21,14 +22,16 @@ type Handler interface {
 // to pass a message use Send
 // to receive a message use Subscribe with specific handler func on it
 type Portal struct {
-	done chan struct{}
+	done  chan struct{}
+	input chan any
 
-	input   chan any
-	inpOnce sync.Once
+	subs []chan any
 
-	subs     []chan any
-	subsOnce sync.Once
-	subsLock sync.Mutex
+	wg        sync.WaitGroup
+	lock      sync.Mutex
+	inpOnce   sync.Once
+	subsOnce  sync.Once
+	subsCount atomic.Uint32
 }
 
 // New Portal constructor
@@ -46,5 +49,6 @@ func New() *Portal {
 // Close signals about Portal working ending
 func (p *Portal) Close() {
 	log.Println("stopping portal...")
+	p.wg.Wait()
 	close(p.done)
 }
