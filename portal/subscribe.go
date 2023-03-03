@@ -23,6 +23,12 @@ func (p *Portal) listen(subscription chan any, handler Handler) {
 		select {
 		case <-p.done:
 			return
+		default:
+		}
+
+		select {
+		case <-p.done:
+			return
 		case msg, open := <-subscription:
 			if !open {
 				return

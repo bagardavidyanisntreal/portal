@@ -1,6 +1,9 @@
 package portal
 
-import "log"
+import (
+	"log"
+	"sync"
+)
 
 // Gate implementation to embed in case of distributed interfaces
 // or just to import locally
@@ -21,6 +24,9 @@ type Portal struct {
 	done  chan struct{}
 	input chan any
 	subs  []chan any
+
+	inputCloser sync.Once
+	subsCloser  sync.Once
 }
 
 // New Portal constructor
@@ -39,18 +45,18 @@ func (p *Portal) monitor() {
 	for {
 		select {
 		case <-p.done:
-			close(p.input)
-			for _, sub := range p.subs {
-				close(sub)
-			}
+			return
+		default:
+		}
+
+		select {
+		case <-p.done:
 			return
 		case msg, open := <-p.input:
 			if !open {
 				return
 			}
-			for _, sub := range p.subs {
-				send(msg, sub, p.done)
-			}
+			p.notify(msg)
 		}
 	}
 }
@@ -58,5 +64,5 @@ func (p *Portal) monitor() {
 // Close signals about Portal working ending
 func (p *Portal) Close() {
 	log.Println("stopping portal...")
-	p.done <- struct{}{}
+	close(p.done)
 }

@@ -3,13 +3,49 @@ package portal
 // Send sends message on input channel, which fans-out it on subscriptions
 // after each subscription handler decides itself whether to process the received message or not
 func (p *Portal) Send(msg any) {
-	send(msg, p.input, p.done)
+	select {
+	case <-p.done:
+		p.closeInput()
+		return
+	default:
+	}
+
+	select {
+	case <-p.done:
+		p.closeInput()
+		return
+	case p.input <- msg:
+	}
 }
 
-func send(msg any, input chan any, done chan struct{}) {
-	select {
-	case <-done:
-		return
-	case input <- msg:
+func (p *Portal) closeInput() {
+	p.inputCloser.Do(func() {
+		close(p.input)
+	})
+}
+
+func (p *Portal) notify(msg any) {
+	for _, sub := range p.subs {
+		select {
+		case <-p.done:
+			p.closeSubs()
+			return
+		default:
+		}
+
+		select {
+		case <-p.done:
+			p.closeSubs()
+			return
+		case sub <- msg:
+		}
 	}
+}
+
+func (p *Portal) closeSubs() {
+	p.subsCloser.Do(func() {
+		for _, sub := range p.subs {
+			close(sub)
+		}
+	})
 }
