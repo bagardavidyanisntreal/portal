@@ -19,12 +19,14 @@ func (p *Portal) Send(msg any) {
 }
 
 func (p *Portal) closeInput() {
-	p.inputCloser.Do(func() {
+	p.inpOnce.Do(func() {
 		close(p.input)
 	})
 }
 
 func (p *Portal) notify(msg any) {
+	p.subsLock.Lock()
+	defer p.subsLock.Unlock()
 	for _, sub := range p.subs {
 		select {
 		case <-p.done:
@@ -43,7 +45,9 @@ func (p *Portal) notify(msg any) {
 }
 
 func (p *Portal) closeSubs() {
-	p.subsCloser.Do(func() {
+	p.subsOnce.Do(func() {
+		p.subsLock.Lock()
+		defer p.subsLock.Unlock()
 		for _, sub := range p.subs {
 			close(sub)
 		}

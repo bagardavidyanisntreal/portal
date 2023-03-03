@@ -21,12 +21,14 @@ type Handler interface {
 // to pass a message use Send
 // to receive a message use Subscribe with specific handler func on it
 type Portal struct {
-	done  chan struct{}
-	input chan any
-	subs  []chan any
+	done chan struct{}
 
-	inputCloser sync.Once
-	subsCloser  sync.Once
+	input   chan any
+	inpOnce sync.Once
+
+	subs     []chan any
+	subsOnce sync.Once
+	subsLock sync.Mutex
 }
 
 // New Portal constructor

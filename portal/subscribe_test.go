@@ -43,9 +43,9 @@ func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
 	}
 
 	gotData := storage.Data()
-	/*if len(gotData) != len(wantData) {
+	if len(gotData) != len(wantData) {
 		t.Errorf("gotData len %v not eq to wantData len %v", len(gotData), len(wantData))
-	}*/
+	}
 
 	for _, stored := range gotData {
 		_, ok := wantData[stored]
