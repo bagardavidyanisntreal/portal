@@ -40,7 +40,9 @@ func (s *Storage) Add(user *user.User, balance int64) (*Account, error) {
 }
 
 func (s *Storage) Get(userID int64) (*Account, error) {
+	s.lock.RLock()
 	got, ok := s.list[userID]
+	s.lock.RUnlock()
 	if !ok {
 		return nil, fmt.Errorf("account not found by userID: %d", userID)
 	}
