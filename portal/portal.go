@@ -43,26 +43,6 @@ func New() *Portal {
 	return p
 }
 
-func (p *Portal) monitor() {
-	for {
-		select {
-		case <-p.done:
-			return
-		default:
-		}
-
-		select {
-		case <-p.done:
-			return
-		case msg, open := <-p.input:
-			if !open {
-				return
-			}
-			p.notify(msg)
-		}
-	}
-}
-
 // Close signals about Portal working ending
 func (p *Portal) Close() {
 	log.Println("stopping portal...")
