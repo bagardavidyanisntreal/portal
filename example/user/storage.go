@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bagardavidyanisntreal/portal/portal"
+	"github.com/bagardavidyanisntreal/portal/v2/portal"
 )
 
 type portalGate interface {

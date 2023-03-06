@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bagardavidyanisntreal/portal/example/user"
-	"github.com/bagardavidyanisntreal/portal/portal"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user"
+	"github.com/bagardavidyanisntreal/portal/v2/portal"
 )
 
 type Storage struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/bagardavidyanisntreal/portal/example/user"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user"
 )
 
 type Account struct {
