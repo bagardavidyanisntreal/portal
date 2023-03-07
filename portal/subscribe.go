@@ -15,8 +15,6 @@ func (p *Portal) Subscribe(handlers ...Handler) {
 		go p.listen(subscriber, handler)
 	}
 
-	p.subsCount.Add(uint32(len(subscribers)))
-
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.subs = append(p.subs, subscribers...)

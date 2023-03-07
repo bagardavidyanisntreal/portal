@@ -11,19 +11,17 @@ func (p *Portal) monitor() {
 		select {
 		case <-p.done:
 			return
-		case msg, open := <-p.input:
+		case envelope, open := <-p.input:
 			if !open {
 				return
 			}
-			p.notify(msg)
+			p.notify(envelope.msg, envelope.destinations)
 		}
 	}
 }
 
-func (p *Portal) notify(msg any) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	for _, sub := range p.subs {
+func (p *Portal) notify(msg any, destinations []chan any) {
+	for _, dest := range destinations {
 		select {
 		case <-p.done:
 			p.closeSubs()
@@ -35,7 +33,7 @@ func (p *Portal) notify(msg any) {
 		case <-p.done:
 			p.closeSubs()
 			return
-		case sub <- msg:
+		case dest <- msg:
 		}
 	}
 }

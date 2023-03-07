@@ -5,34 +5,33 @@ import (
 	"testing"
 )
 
-type subscribeTestHandler1 struct {
+type subscribeTestHandler struct {
+	marker  string
 	storage *testStorage
 }
 
-func (t subscribeTestHandler1) Handle(msg any) {
-	data := fmt.Sprintf("[subscribeTestHandler1]: '%v'", msg)
+func newSubscribeTestHandler(marker string, storage *testStorage) *subscribeTestHandler {
+	return &subscribeTestHandler{
+		marker:  marker,
+		storage: storage,
+	}
+}
+
+func (t subscribeTestHandler) Handle(msg any) {
+	data := fmt.Sprintf(t.marker, msg)
 	t.storage.Add(data)
 }
 
-type subscribeTestHandler2 struct {
-	storage *testStorage
-}
-
-func (t subscribeTestHandler2) Handle(msg any) {
-	data := fmt.Sprintf("[subscribeTestHandler2]: '%v'", msg)
-	t.storage.Add(data)
-}
-
-func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
+func TestPortal_Subscribe_SubscriptionsAdded(t *testing.T) {
 	t.Parallel()
 	portal := New()
 
 	storage := &testStorage{}
-
 	portal.Subscribe(
-		&subscribeTestHandler1{storage: storage},
-		&subscribeTestHandler2{storage: storage},
+		newSubscribeTestHandler("[handler-1]: '%v'", storage),
+		newSubscribeTestHandler("[handler-2]: '%v'", storage),
 	)
+
 	portal.Send("I am test data")
 	portal.Send("Some new data!")
 	portal.Send("And more...")
@@ -40,12 +39,12 @@ func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
 	portal.Close()
 
 	wantData := map[string]struct{}{
-		"[subscribeTestHandler1]: 'I am test data'": {},
-		"[subscribeTestHandler2]: 'I am test data'": {},
-		"[subscribeTestHandler1]: 'Some new data!'": {},
-		"[subscribeTestHandler2]: 'Some new data!'": {},
-		"[subscribeTestHandler1]: 'And more...'":    {},
-		"[subscribeTestHandler2]: 'And more...'":    {},
+		"[handler-1]: 'I am test data'": {},
+		"[handler-2]: 'I am test data'": {},
+		"[handler-1]: 'Some new data!'": {},
+		"[handler-2]: 'Some new data!'": {},
+		"[handler-1]: 'And more...'":    {},
+		"[handler-2]: 'And more...'":    {},
 	}
 
 	gotData := storage.Data()
@@ -59,4 +58,35 @@ func TestPortal_Await_SubscriptionsAdded(t *testing.T) {
 			t.Errorf("cannot find needed message in got: %s", stored)
 		}
 	}
+}
+
+type uselessHandler struct{ marker string }
+
+func (h uselessHandler) Handle(msg any) { fmt.Printf(h.marker, msg) }
+
+func TestPortal_Subscribe_NoNegativeWGCounter(t *testing.T) {
+	// this test checks nothing but stdout with sent messages on subscribed handlers
+	// and that there is no panic on negative wg counter
+	t.Parallel()
+
+	gate := New()
+	defer gate.Close()
+
+	gate.Send("no one will see this")
+
+	gate.Subscribe(
+		&uselessHandler{marker: "[handler-1]: %v\n"},
+		&uselessHandler{marker: "[handler-2]: %v\n"},
+		&uselessHandler{marker: "[handler-3]: %v\n"},
+	)
+	gate.Send("first message")
+
+	gate.Subscribe(
+		&uselessHandler{marker: "[handler-4]: %v\n"},
+		&uselessHandler{marker: "[handler-5]: %v\n"},
+		&uselessHandler{marker: "[handler-6]: %v\n"},
+	)
+	gate.Send("second message")
+
+	fmt.Println("[main] useless handlers sucks")
 }

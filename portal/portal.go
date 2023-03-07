@@ -3,7 +3,6 @@ package portal
 import (
 	"log"
 	"sync"
-	"sync/atomic"
 )
 
 // Gate implementation to embed in case of distributed interfaces
@@ -23,15 +22,19 @@ type Handler interface {
 // to receive a message use Subscribe with specific handler func on it
 type Portal struct {
 	done  chan struct{}
-	input chan any
+	input chan envelopeMsg
+	subs  []chan any
 
-	subs []chan any
+	wg   sync.WaitGroup
+	lock sync.RWMutex
 
-	wg        sync.WaitGroup
-	lock      sync.Mutex
-	inpOnce   sync.Once
+	inputOnce sync.Once
 	subsOnce  sync.Once
-	subsCount atomic.Uint32
+}
+
+type envelopeMsg struct {
+	msg          any
+	destinations []chan any
 }
 
 // New Portal constructor
@@ -39,7 +42,7 @@ type Portal struct {
 func New() *Portal {
 	p := &Portal{
 		done:  make(chan struct{}),
-		input: make(chan any),
+		input: make(chan envelopeMsg),
 	}
 
 	go p.monitor()
