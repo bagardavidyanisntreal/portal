@@ -1,47 +1,37 @@
 package portal
 
+import "sync"
+
 func (p *Portal) monitor() {
+	defer p.closeSubs()
 	for {
-		select {
-		case <-p.done:
+		if err := p.ctx.Err(); err != nil {
 			return
-		default:
 		}
 
 		select {
-		case <-p.done:
+		case <-p.ctx.Done():
 			return
 		case envelope, open := <-p.input:
 			if !open {
 				return
 			}
-			p.notify(envelope.msg, envelope.destinations)
+			go func() {
+				for _, dest := range envelope.destinations {
+					dest <- envelope.msg
+				}
+			}()
 		}
 	}
 }
 
-func (p *Portal) notify(msg any, destinations []chan any) {
-	for _, dest := range destinations {
-		select {
-		case <-p.done:
-			p.closeSubs()
-			return
-		default:
-		}
-
-		select {
-		case <-p.done:
-			p.closeSubs()
-			return
-		case dest <- msg:
-		}
-	}
-}
+var subsOnce = sync.Once{}
 
 func (p *Portal) closeSubs() {
-	p.subsOnce.Do(func() {
+	subsOnce.Do(func() {
 		p.lock.Lock()
 		defer p.lock.Unlock()
+
 		for _, sub := range p.subs {
 			close(sub)
 		}

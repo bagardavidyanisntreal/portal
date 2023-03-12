@@ -22,14 +22,12 @@ func (p *Portal) Subscribe(handlers ...Handler) {
 
 func (p *Portal) listen(subscription chan any, handler Handler) {
 	for {
-		select {
-		case <-p.done:
+		if err := p.ctx.Err(); err != nil {
 			return
-		default:
 		}
 
 		select {
-		case <-p.done:
+		case <-p.ctx.Done():
 			return
 		case msg, open := <-subscription:
 			if !open {

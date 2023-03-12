@@ -1,43 +1,37 @@
 package portal
 
+import "sync"
+
 // Send sends message on input channel, which fans-out it on subscriptions
 // after each subscription handler decides itself whether to process the received message or not
 func (p *Portal) Send(msg any) {
-	destinations, waiting := p.destinations()
-	envelope := envelopeMsg{
-		msg:          msg,
-		destinations: destinations,
+	destinations := p.destinations()
+	p.wg.Add(len(destinations))
+
+	envelope := envelopeMsg{msg: msg, destinations: destinations}
+
+	if err := p.ctx.Err(); err != nil {
+		p.closeInput(len(destinations))
+		return
 	}
 
-	select {
-	case <-p.done:
-		p.closeInput(waiting)
-		return
-	default:
-	}
-
-	select {
-	case <-p.done:
-		p.closeInput(waiting)
-		return
-	case p.input <- envelope:
-	}
+	p.input <- envelope
 }
 
-func (p *Portal) destinations() ([]chan any, int) {
+func (p *Portal) destinations() []chan any {
 	p.lock.RLock()
-	waiting := len(p.subs)
-	subs := make([]chan any, waiting)
+	subs := make([]chan any, len(p.subs))
 	copy(subs, p.subs)
 	p.lock.RUnlock()
 
-	p.wg.Add(waiting)
-	return subs, waiting
+	return subs
 }
 
-func (p *Portal) closeInput(waiting int) {
-	p.inputOnce.Do(func() {
-		p.wg.Add(-1 * waiting)
+var inputOnce = sync.Once{}
+
+func (p *Portal) closeInput(destinationCount int) {
+	inputOnce.Do(func() {
+		p.wg.Add(-1 * destinationCount)
 		close(p.input)
 	})
 }

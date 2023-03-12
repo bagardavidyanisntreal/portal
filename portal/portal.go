@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"context"
 	"log"
 	"sync"
 )
@@ -21,15 +22,14 @@ type Handler interface {
 // to pass a message use Send
 // to receive a message use Subscribe with specific handler func on it
 type Portal struct {
-	done  chan struct{}
 	input chan envelopeMsg
 	subs  []chan any
 
 	wg   sync.WaitGroup
 	lock sync.RWMutex
 
-	inputOnce sync.Once
-	subsOnce  sync.Once
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 type envelopeMsg struct {
@@ -40,9 +40,12 @@ type envelopeMsg struct {
 // New Portal constructor
 // also runs monitor for input
 func New() *Portal {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	p := &Portal{
-		done:  make(chan struct{}),
-		input: make(chan envelopeMsg),
+		input:  make(chan envelopeMsg),
+		ctx:    ctx,
+		cancel: cancel,
 	}
 
 	go p.monitor()
@@ -53,5 +56,5 @@ func New() *Portal {
 func (p *Portal) Close() {
 	log.Println("stopping portal...")
 	p.wg.Wait()
-	close(p.done)
+	p.cancel()
 }
