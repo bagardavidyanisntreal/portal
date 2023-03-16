@@ -16,8 +16,8 @@ func (p *Portal) Subscribe(handlers ...Handler) {
 	}
 
 	p.lock.Lock()
-	defer p.lock.Unlock()
 	p.subs = append(p.subs, subscribers...)
+	p.lock.Unlock()
 }
 
 func (p *Portal) listen(subscription chan any, handler Handler) {
