@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bagardavidyanisntreal/portal/v2/example/account"
-	"github.com/bagardavidyanisntreal/portal/v2/example/application"
-	"github.com/bagardavidyanisntreal/portal/v2/example/user"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user-accounts/account"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user-accounts/application"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user-accounts/user"
 	"github.com/bagardavidyanisntreal/portal/v2/portal"
 )
 

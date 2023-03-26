@@ -1,8 +1,8 @@
 package application
 
 import (
-	"github.com/bagardavidyanisntreal/portal/v2/example/account"
-	"github.com/bagardavidyanisntreal/portal/v2/example/user"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user-accounts/account"
+	"github.com/bagardavidyanisntreal/portal/v2/example/user-accounts/user"
 )
 
 type (
