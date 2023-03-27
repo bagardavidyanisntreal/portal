@@ -52,7 +52,7 @@ func (a *Arena) toTavern() (winner *dto.Hero, looser *dto.Hero) {
 	}
 
 	if looserID == len(a.heroes)-1 {
-		a.heroes = append(a.heroes[:looserID])
+		a.heroes = a.heroes[:looserID]
 	} else {
 		a.heroes = append(a.heroes[:looserID], a.heroes[looserID+1:]...)
 	}
